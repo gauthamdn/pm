@@ -30,7 +30,7 @@ Status: frontend planning expanded; awaiting user review and approval before imp
 - [x] Inspect the frontend and existing test configuration.
 - [x] Record the user's decisions and expand frontend tasks, tests, and success criteria.
 - [ ] Obtain user approval of this plan before implementation.
-- [ ] Create `frontend/AGENTS.md` describing the actual component structure, state, styling, commands, and tests; maintain it as implementation proceeds.
+- [x] Create `frontend/AGENTS.md` describing the actual component structure, state, styling, commands, and tests; maintain it as implementation proceeds.
 
 Success criteria: the approved plan covers frontend requirements and backend dependencies; frontend documentation describes implemented behavior accurately.
 
