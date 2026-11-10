@@ -16,6 +16,6 @@ Windows PowerShell:
 ./scripts/stop.ps1
 ```
 
-Open http://localhost:8000 after starting. Part 2 currently serves a smoke page that calls the FastAPI health endpoint. The frontend demo is still separate.
+Open http://localhost:8000 after starting. FastAPI serves the statically built Kanban demo. Board changes currently reset on reload; sign-in and persistence come in later stages.
 
-Normal stops preserve the data volume. See [scaffolding notes](docs/SCAFFOLDING.md) for development and verification.
+Normal stops preserve the data volume. See [Docker setup](docs/SCAFFOLDING.md) and [frontend testing](docs/FRONTEND.md).

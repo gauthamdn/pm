@@ -5,9 +5,9 @@ Follow the root `AGENTS.md` and `../docs/PLAN.md`.
 ## Current implementation
 
 - Python 3.14, FastAPI, and Uvicorn; dependencies are declared in `pyproject.toml` and resolved in the generated `uv.lock`. Regenerate the lock with uv rather than editing it.
-- `app/main.py` defines the application and `GET /api/health`. Register API routes before the root static mount.
-- `app/static/` contains the Part 2 smoke page, styles, and browser API call. The Next.js frontend is not integrated yet.
-- `tests/test_app.py` verifies the health response, static resources, and unknown API routes. Tests use FastAPI TestClient with httpx2.
+- `app/main.py` defines `create_app` and `GET /api/health`. Register API routes before the root static mount.
+- Docker copies the Next.js export into `/app/static` and sets `STATIC_DIR` to that path. Local development defaults to `frontend/out/` relative to the repository. Missing exports do not block API startup; build the frontend before loading the local backend homepage.
+- `tests/test_app.py` uses isolated static fixtures to verify the API, nested static assets, and 404 handling. Tests use FastAPI TestClient with httpx2. Frontend Playwright tests separately exercise the actual Docker export.
 - The Docker image installs production dependencies using `uv sync --locked --no-dev` and runs as the non-root `app` user.
 - Compose mounts persistent storage at `/app/data` and reserves `DATABASE_PATH=/app/data/kanban.sqlite3` for later database implementation. No application schema or database initialization exists yet; follow the Part 5 approval checkpoint.
 

@@ -1,6 +1,8 @@
 .git
 .env
 .env.*
+**/.env
+**/.env.*
 **/.venv
 **/__pycache__
 **/.pytest_cache
@@ -8,10 +10,12 @@
 **/node_modules
 **/.next
 **/out
-**/test-results
+**/test-results*
 **/playwright-report
+**/coverage
+**/*.tsbuildinfo
+**/next-env.d.ts
 **/*.sqlite3*
-frontend
 docs
 scripts
 .DS_Store

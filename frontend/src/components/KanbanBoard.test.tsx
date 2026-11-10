@@ -1,5 +1,6 @@
 import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { describe, expect, it } from "vitest";
 import { KanbanBoard } from "@/components/KanbanBoard";
 
 const getFirstColumn = () => screen.getAllByTestId(/column-/i)[0];
@@ -42,5 +43,29 @@ describe("KanbanBoard", () => {
     await userEvent.click(deleteButton);
 
     expect(within(column).queryByText("New card")).not.toBeInTheDocument();
+  });
+
+  it("rejects whitespace-only titles", async () => {
+    render(<KanbanBoard />);
+    const column = getFirstColumn();
+    await userEvent.click(within(column).getByRole("button", { name: /add a card/i }));
+    await userEvent.type(within(column).getByPlaceholderText("Card title"), "   ");
+    await userEvent.click(within(column).getByRole("button", { name: "Add card" }));
+    expect(within(column).getAllByTestId(/^card-/)).toHaveLength(2);
+    expect(within(column).getByPlaceholderText("Card title")).toBeInTheDocument();
+  });
+
+  it("clears a cancelled draft and supplies default details", async () => {
+    render(<KanbanBoard />);
+    const column = getFirstColumn();
+    await userEvent.click(within(column).getByRole("button", { name: /add a card/i }));
+    await userEvent.type(within(column).getByPlaceholderText("Card title"), "Draft");
+    await userEvent.click(within(column).getByRole("button", { name: "Cancel" }));
+    await userEvent.click(within(column).getByRole("button", { name: /add a card/i }));
+    expect(within(column).getByPlaceholderText("Card title")).toHaveValue("");
+    await userEvent.type(within(column).getByPlaceholderText("Card title"), "  New task  ");
+    await userEvent.click(within(column).getByRole("button", { name: "Add card" }));
+    expect(within(column).getByText("New task")).toBeInTheDocument();
+    expect(within(column).getByText("No details yet.")).toBeInTheDocument();
   });
 });

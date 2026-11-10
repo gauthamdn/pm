@@ -1,6 +1,6 @@
 # Project implementation plan
 
-Status: Part 1 is complete and approved by the user. Part 2 scaffolding is complete; Part 3 has not started.
+Status: Parts 1 and 2 are complete and accepted by the user. Part 3 is implemented and verified; Part 4 has not started.
 
 ## Agreed behavior
 
@@ -18,12 +18,12 @@ Status: Part 1 is complete and approved by the user. Part 2 scaffolding is compl
 ## Existing frontend
 
 - `frontend/src/app/page.tsx` renders `KanbanBoard`; `layout.tsx` provides metadata and Google fonts.
-- `KanbanBoard.tsx` owns in-memory state and pointer drag and drop using dnd-kit.
+- `KanbanBoard.tsx` owns in-memory state and pointer drag and drop using dnd-kit, including cancellation and a stable context ID for hydration.
 - `KanbanColumn`, `KanbanCard`, `KanbanCardPreview`, and `NewCardForm` implement the board UI.
 - `frontend/src/lib/kanban.ts` contains board types, demo data, ID generation, and movement logic.
 - Column renaming, card creation/removal, and card movement exist. Card editing is missing, and changes reset on reload.
-- Vitest and React Testing Library cover board interactions and movement logic. Playwright covers loading, adding, and moving cards in Chromium against the Next.js development server.
-- Static export, authentication, API integration, persistence, and AI chat are not implemented.
+- Vitest and React Testing Library cover board interactions and movement logic. Playwright covers production static serving through FastAPI and local development, including desktop and narrow layouts.
+- Docker statically builds and serves the frontend. Authentication, board API integration, persistence, card editing, and AI chat are not implemented.
 
 ## Part 1: Plan and frontend documentation
 
@@ -51,20 +51,22 @@ Verification: built and started through the macOS shell script; inspected the re
 
 ## Part 3: Serve the existing frontend
 
-- [ ] Configure Next.js static export and copy the exported assets into the Docker image for FastAPI to serve.
-- [ ] Verify asset paths, fonts, initial navigation, and reload at `/` in the production build.
-- [ ] Preserve demo board interactions during this stage.
-- [ ] Allow Playwright to target the Docker-served app while retaining convenient local frontend tests.
-- [ ] Inspect desktop and narrow-screen layouts for clipping, spacing, wrapping, and focus visibility; fix clear UI defects.
+- [x] Configure Next.js static export and copy the exported assets into the Docker image for FastAPI to serve.
+- [x] Verify asset paths, fonts, initial navigation, and reload at `/` in the production build.
+- [x] Preserve demo board interactions during this stage.
+- [x] Allow Playwright to target the Docker-served app while retaining convenient local frontend tests.
+- [x] Inspect desktop and narrow-screen layouts for clipping, spacing, wrapping, and focus visibility; fix clear UI defects.
 
 Tests:
 
-- [ ] Run lint, unit/component tests, and the production build.
-- [ ] Run browser tests against the exported app: five columns, eight demo cards, column renaming, card creation/removal, and drag and drop.
-- [ ] Cover reordering, movement between columns, drops into empty columns, and drag cancellation.
-- [ ] Check console/network errors on initial load and reload.
+- [x] Run lint, unit/component tests, and the production build.
+- [x] Run browser tests against the exported app: five columns, eight demo cards, column renaming, card creation/removal, and drag and drop.
+- [x] Cover reordering, movement between columns, drops into empty columns, and drag cancellation.
+- [x] Check console/network errors on initial load and reload.
 
 Success criteria: the demo board works at `/` from Docker without a Next.js runtime server, and remains usable at desktop and narrow widths.
+
+Verification: frontend lint, 12 unit/component tests, production type checking/static build, backend lint/formatting, and seven backend tests passed. The final Docker image passed 16 browser tests; four narrow pointer-drag variants are intentionally skipped because those scenarios run on desktop. The local dev-server path passed nine desktop browser tests, with its FastAPI-only test skipped. Inspected production screenshots at 1440 x 1000 and 390 x 844; checked fonts, focus, long text, and browser/network errors. Confirmed the runtime is non-root Python without Node, and `npm start` serves the local export. See `docs/FRONTEND.md` for commands, coverage, and fixes.
 
 ## Part 4: Sign-in and sign-out
 
