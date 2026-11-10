@@ -1,0 +1,17 @@
+.git
+.env
+.env.*
+**/.venv
+**/__pycache__
+**/.pytest_cache
+**/.ruff_cache
+**/node_modules
+**/.next
+**/out
+**/test-results
+**/playwright-report
+**/*.sqlite3*
+frontend
+docs
+scripts
+.DS_Store

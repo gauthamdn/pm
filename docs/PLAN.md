@@ -1,6 +1,6 @@
 # Project implementation plan
 
-Status: Part 1 planning and frontend documentation are complete. User approval of the plan remains pending before Part 2 implementation.
+Status: Part 1 is complete and approved by the user. Part 2 scaffolding is complete; Part 3 has not started.
 
 ## Agreed behavior
 
@@ -29,23 +29,25 @@ Status: Part 1 planning and frontend documentation are complete. User approval o
 
 - [x] Inspect the frontend and existing test configuration.
 - [x] Record the user's decisions and expand frontend tasks, tests, and success criteria.
-- [ ] Obtain user approval of this plan before implementation.
+- [x] Obtain user approval of this plan before implementation.
 - [x] Create `frontend/AGENTS.md` describing the actual component structure, state, styling, commands, and tests; maintain it as implementation proceeds.
 
 Success criteria: the approved plan covers frontend requirements and backend dependencies; frontend documentation describes implemented behavior accurately.
 
-Verification: reviewed the frontend source, package scripts, and test configuration against `frontend/AGENTS.md`. The plan includes implementation checklists, tests, and success criteria for all ten parts and records the four agreed product decisions. Documentation work is complete; the approval checkbox remains open until the user approves the plan. No application changes or application tests were needed for this documentation stage.
+Verification: reviewed the frontend source, package scripts, and test configuration against `frontend/AGENTS.md`. The plan includes implementation checklists, tests, and success criteria for all ten parts and records the four agreed product decisions. The user approved Part 1 and authorized Part 2. No application changes or application tests were needed for the documentation stage.
 
 ## Part 2: Scaffolding
 
-- [ ] Set up Docker, FastAPI in `backend/`, and macOS, Windows, and Linux start/stop scripts in `scripts/`.
-- [ ] Serve example static HTML at `/` that calls an API endpoint and displays its response.
-- [ ] Configure persistent SQLite storage that normal stop/start operations retain.
+- [x] Set up Docker, FastAPI in `backend/`, and macOS, Windows, and Linux start/stop scripts in `scripts/`.
+- [x] Serve example static HTML at `/` that calls an API endpoint and displays its response.
+- [x] Configure persistent SQLite storage that normal stop/start operations retain.
 
 Tests and success criteria:
 
-- [ ] Start the container using the documented script and verify the page and API response in a browser.
-- [ ] Confirm stopping the container does not delete persistent storage.
+- [x] Start the container using the documented script and verify the page and API response in a browser.
+- [x] Confirm stopping the container does not delete persistent storage.
+
+Verification: built and started through the macOS shell script; inspected the real page/API response in headless Chromium at desktop and narrow widths. All five backend tests, lint, and formatting passed. A separate SQLite probe survived stop/start and container recreation, then was removed. Shell syntax checks passed; native Windows/Linux script execution remains unverified. See `docs/SCAFFOLDING.md` for commands and details.
 
 ## Part 3: Serve the existing frontend
 
