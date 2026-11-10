@@ -3,6 +3,17 @@ import { expect, test, type Locator, type Page } from "@playwright/test";
 const columns = (page: Page) => page.locator('[data-testid^="column-"]');
 const cards = (page: Page) => page.locator('[data-testid^="card-"]');
 
+test.beforeEach(async ({ context }) => {
+  const response = await context.request.post("/api/session", {
+    data: { username: "user", password: "password" },
+  });
+  expect(response.ok()).toBe(true);
+});
+
+test.afterEach(async ({ context }) => {
+  await context.request.delete("/api/session");
+});
+
 async function startDrag(page: Page, card: Locator) {
   await card.scrollIntoViewIfNeeded();
   const box = await card.boundingBox();

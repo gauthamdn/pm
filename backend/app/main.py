@@ -4,9 +4,13 @@ from pathlib import Path
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
+from app.auth import router as session_router
+
 
 def create_app(static_dir: Path | None = None) -> FastAPI:
     app = FastAPI(title="Kanban Studio API")
+    app.state.sessions = {}
+    app.include_router(session_router)
 
     @app.get("/api/health")
     def health() -> dict[str, str]:

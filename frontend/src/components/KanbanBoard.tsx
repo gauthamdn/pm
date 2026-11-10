@@ -15,7 +15,13 @@ import { KanbanColumn } from "@/components/KanbanColumn";
 import { KanbanCardPreview } from "@/components/KanbanCardPreview";
 import { createId, initialData, moveCard, type BoardData } from "@/lib/kanban";
 
-export const KanbanBoard = () => {
+type KanbanBoardProps = {
+  onSignOut?: () => void;
+  signingOut?: boolean;
+  signOutError?: string;
+};
+
+export const KanbanBoard = ({ onSignOut, signingOut, signOutError }: KanbanBoardProps) => {
   const [board, setBoard] = useState<BoardData>(() => initialData);
   const [activeCardId, setActiveCardId] = useState<string | null>(null);
 
@@ -98,6 +104,12 @@ export const KanbanBoard = () => {
 
       <main className="relative mx-auto flex min-h-screen max-w-[1500px] flex-col gap-10 px-4 pb-16 pt-6 sm:px-6 sm:pt-12">
         <header className="flex flex-col gap-6 rounded-[32px] border border-[var(--stroke)] bg-white/80 p-6 shadow-[var(--shadow)] backdrop-blur sm:p-8">
+          {onSignOut && (
+            <div className="flex flex-wrap items-center justify-end gap-3">
+              {signOutError && <p role="alert" className="text-sm text-[var(--secondary-purple)]">{signOutError}</p>}
+              <button type="button" onClick={onSignOut} disabled={signingOut} className="rounded-full border border-[var(--stroke)] px-4 py-2 text-sm font-semibold text-[var(--navy-dark)] transition hover:bg-[var(--surface)] disabled:cursor-wait disabled:opacity-60">{signingOut ? "Signing out..." : "Sign out"}</button>
+            </div>
+          )}
           <div className="flex flex-wrap items-start justify-between gap-6">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.35em] text-[var(--gray-text)]">
