@@ -6,13 +6,15 @@ from app.main import create_app
 
 @pytest.fixture
 def client(tmp_path):
-    (tmp_path / "index.html").write_text("<h1>Kanban Studio</h1>")
-    assets = tmp_path / "_next" / "static"
+    site = tmp_path / "site"
+    site.mkdir()
+    (site / "index.html").write_text("<h1>Kanban Studio</h1>")
+    assets = site / "_next" / "static"
     assets.mkdir(parents=True)
     (assets / "app.js").write_text('console.log("Kanban Studio");')
     (assets / "styles.css").write_text("body { color: #032147; }")
-    (tmp_path / "404.html").write_text("Page not found")
-    with TestClient(create_app(tmp_path)) as client:
+    (site / "404.html").write_text("Page not found")
+    with TestClient(create_app(site, database_path=tmp_path / "db.sqlite3")) as client:
         yield client
 
 

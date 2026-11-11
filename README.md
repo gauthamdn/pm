@@ -16,6 +16,6 @@ Windows PowerShell:
 ./scripts/stop.ps1
 ```
 
-Open http://localhost:8000 and sign in with `user` / `password`. FastAPI serves the static frontend and session API. Board changes currently reset on reload; persistence comes in later stages.
+Open http://localhost:8000 and sign in with `user` / `password`. Persistent backend APIs are implemented; the board UI still uses demo state and resets on reload until Part 7 connects it.
 
 Normal stops preserve the data volume. See [Docker setup](docs/SCAFFOLDING.md) and [frontend testing](docs/FRONTEND.md).

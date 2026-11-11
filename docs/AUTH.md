@@ -20,7 +20,7 @@ The static homepage initially renders a session-loading screen. The board mounts
 
 Failed initial lookup shows a retry screen. A failed background check shows an error without discarding local board edits. In-flight checks are ignored during authentication changes so a stale response cannot restore private content after logout.
 
-Board persistence is not implemented yet. Reloading or signing out resets demo edits. Sign-out only removes session state and does not touch persistent storage; schema approval and database work remain in Parts 5 and 6.
+Backend persistence is implemented, while the board UI still uses local demo state until Part 7. Reloading or signing out resets UI demo edits. Sign-out only removes session state; saved API board data and chat history remain in SQLite. See [database implementation](DATABASE.md).
 
 The Next.js dev server proxies `/api/` to the running backend on port 8000. Production builds remain static. The standalone `serve` preview has no API; use Docker to test the complete app.
 

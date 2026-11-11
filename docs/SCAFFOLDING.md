@@ -24,9 +24,9 @@ docker compose logs app
 
 `Dockerfile` builds the frontend using Node 26 and `npm ci`, then copies the static export into a Python 3.14 image using uv 0.13.7 and locked production dependencies. FastAPI serves the API before mounting `/app/static` at `/`. Node is not included in the runtime image. The container runs as a non-root user; the published port binds only to the local machine. The setup follows the [uv Docker guide](https://docs.astral.sh/uv/guides/integration/docker/) and [FastAPI container guide](https://fastapi.tiangolo.com/deployment/docker/).
 
-Compose mounts the named volume `kanban-studio_kanban-data` at `/app/data`. `DATABASE_PATH=/app/data/kanban.sqlite3` reserves the application database location for later stages. Normal stop scripts remove the container and network while retaining the volume. The image excludes environment files, and Part 2 needs no API key.
+Compose mounts the named volume `kanban-studio_kanban-data` at `/app/data`. Startup creates and seeds `DATABASE_PATH=/app/data/kanban.sqlite3` if absent. Existing boards and chat messages are retained, including empty boards. Normal stop scripts remove the container and network while retaining the volume. The image excludes environment files; no AI key is needed yet.
 
-The app does not yet initialize the application database or define a schema. Schema approval and database creation remain in Parts 5 and 6. Board state currently resets on reload.
+The user approved the five-table database design, and the backend implements its board save/read and chat history read APIs. Frontend persistence integration remains Part 7, so UI edits still reset on reload. See [database implementation](DATABASE.md).
 
 ## Development checks
 

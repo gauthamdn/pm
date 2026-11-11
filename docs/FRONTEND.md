@@ -6,7 +6,7 @@ From the repository root, run `./scripts/start.sh` (or `./scripts/start.ps1` on 
 
 The Docker build runs `npm ci` and `next build` in a Node stage, then copies `frontend/out/` to `/app/static` in the Python runtime. FastAPI serves the export at `/`, including JavaScript, CSS, fonts, and the exported 404 page. `/api/health` remains an API route. This follows the [Next.js static export documentation](https://nextjs.org/docs/app/guides/static-exports).
 
-Sign in with `user` / `password`. The board still uses React state seeded from the demo data; reloading or signing out resets edits. Card editing and persistence belong to later stages. See [session behavior](AUTH.md).
+Sign in with `user` / `password`. The board still uses React state seeded from the demo data; reloading or signing out resets edits. Card editing and frontend persistence integration remain Part 7 work. The [persistent backend APIs](DATABASE.md) are implemented. See [session behavior](AUTH.md).
 
 ## Local checks
 

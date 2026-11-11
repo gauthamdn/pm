@@ -1,6 +1,6 @@
 # Project implementation plan
 
-Status: Parts 1-3 are complete and accepted by the user. Part 4 is implemented and verified. The Part 5 schema proposal is ready for user approval; Part 6 has not started.
+Status: Parts 1-5 are complete, including user approval of the database approach. Part 6 backend persistence is implemented and verified. Frontend integration in Part 7 has not started.
 
 ## Agreed behavior
 
@@ -23,7 +23,7 @@ Status: Parts 1-3 are complete and accepted by the user. Part 4 is implemented a
 - `frontend/src/lib/kanban.ts` contains board types, demo data, ID generation, and movement logic.
 - Column renaming, card creation/removal, and card movement exist. Card editing is missing, and changes reset on reload.
 - Vitest and React Testing Library cover board interactions and movement logic. Playwright covers production static serving through FastAPI and local development, including desktop and narrow layouts.
-- Docker statically builds and serves the frontend. Backend-managed sign-in/sign-out is implemented. Board API integration, persistence, card editing, and AI chat are not implemented.
+- Docker statically builds and serves the frontend. Sign-in/sign-out and persistent backend board/history APIs are implemented. Frontend board API integration, card editing, and AI chat remain future stages.
 
 ## Part 1: Plan and frontend documentation
 
@@ -92,26 +92,28 @@ Verification: frontend lint, 24 unit/component tests, production type checking/s
 - [x] Propose the database schema as JSON and document it in `docs/`, including users, boards, fixed columns, ordered cards, and persistent chat messages.
 - [x] Define stable IDs, card title/details, column titles, card ordering, and message ordering.
 - [x] Define request/response shapes for session, board reads/mutations, chat history, and chat submission, including errors.
-- [x] Specify demo seeding only when a user's board is first created; later loads must not recreate removed cards. Runtime seeding remains Part 6 work.
+- [x] Specify demo seeding only when a user's board is first created; later loads must not recreate removed cards. Runtime seeding is implemented in Part 6.
 - [x] Define how successful AI responses return persisted messages and the resulting board to the UI.
-- [ ] Obtain user sign-off on the schema and database approach before implementing it.
+- [x] Obtain user sign-off on the schema and database approach before implementing it.
 
 Validation and success criteria:
 
 - [x] Walk through card creation/editing/removal/movement, column renaming, chat reload, and sign-out/sign-in using the proposed contracts.
-- [x] Validate that the proposed schema supports these operations without adding account management or multiple-board UI. User approval remains pending.
+- [x] Validate that the approved schema supports these operations without adding account management or multiple-board UI.
 
-Proposal: `docs/database-schema.json` defines five tables and the exact existing demo seed. `docs/DATABASE.md` defines ownership, snapshot-save APIs, ordering, revisions, atomic chat updates, retries, and lifecycle behavior. All table definitions were accepted by disposable in-memory SQLite. Checks covered two independently seeded users, constraints, create/edit/remove/move/reorder/rename, revision comparison, rollback, and chat turn uniqueness. No application database or persistent volume was opened or changed. The schema must be approved before Part 6 implementation.
+Approved design: `docs/database-schema.json` defines five tables and the exact existing demo seed. `docs/DATABASE.md` defines ownership, snapshot-save APIs, ordering, revisions, atomic chat updates, retries, and lifecycle behavior. Proposal checks used in-memory SQLite without touching application data; the user subsequently approved the approach and authorized the implementation below.
 
 ## Part 6: Backend APIs
 
-- [ ] Implement authenticated board reads and mutations, database creation, and demo seeding.
-- [ ] Support card creation, editing, removal, movement/reordering, and column renaming.
-- [ ] Enforce user ownership and fixed columns; return persisted results after successful mutations.
-- [ ] Implement persistent chat history reads in preparation for AI integration.
-- [ ] Test validation, ownership, ordering, persistence, and failure behavior with backend tests.
+- [x] Implement authenticated board reads and mutations, database creation, and demo seeding.
+- [x] Support card creation, editing, removal, movement/reordering, and column renaming.
+- [x] Enforce user ownership and fixed columns; return persisted results after successful mutations.
+- [x] Implement persistent chat history reads in preparation for AI integration.
+- [x] Test validation, ownership, ordering, persistence, and failure behavior with backend tests.
 
 Success criteria: APIs match the approved frontend contracts, failed mutations do not partially save, and saved data survives reloads and restarts.
+
+Verification: 67 backend tests passed with warnings treated as errors; lint and formatting passed. Docker built and initialized the approved database. Browser regression tests passed 32 scenarios, with the four existing narrow drag variants intentionally skipped. Real HTTP CRUD/conflict/history checks ran in a disposable container and volume; full container removal/recreation retained the exact saved board and messages, including an empty board without reseeding. Confirmed packaged schema metadata and seed match the approved JSON. The app's board data was not mutated by tests. Frontend integration remains Part 7; see `docs/DATABASE.md` for manual API checks.
 
 ## Part 7: Persistent frontend board
 

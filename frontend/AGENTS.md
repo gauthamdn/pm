@@ -67,6 +67,6 @@ For bug fixes, first reproduce the issue through the browser as an end user woul
 
 ## Planned integration boundaries
 
-Docker uses a Node build stage and copies only `out/` into the Python runtime image. FastAPI serves these files alongside `/api/health` and `/api/session`. See `../docs/FRONTEND.md` and `../docs/AUTH.md`. SQLite board data remains planned; keep OpenRouter credentials and calls in the backend, and avoid production features requiring a Next.js runtime server.
+Docker uses a Node build stage and copies only `out/` into the Python runtime image. FastAPI serves these files alongside session, persistent board, and chat history APIs. The UI still uses demo board state until Part 7 connects the approved snapshot contract in `../docs/DATABASE.md`. See `../docs/FRONTEND.md` and `../docs/AUTH.md`. Keep OpenRouter credentials and calls in the backend, and avoid production features requiring a Next.js runtime server.
 
 The agreed product behavior is immediate AI card updates, chat history retained across reloads/sign-ins, existing demo data seeded into new databases, and data retained across container stops. Implement these through the stages and approval checkpoints in `../docs/PLAN.md`; they are not current demo capabilities.

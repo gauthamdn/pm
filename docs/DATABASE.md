@@ -1,8 +1,8 @@
-# Part 5: database proposal
+# Approved database design and implementation
 
-Status: ready for user review. No application database or database APIs have been implemented. Approval is required before Part 6.
+Status: the user approved Part 5 and authorized implementation. Part 6 now implements the five-table schema, initialization/seeding, authenticated board saves/reads, and chat history reads. Frontend integration remains Part 7; AI chat writes remain Part 9.
 
-The proposed schema and exact demo seed are in [database-schema.json](database-schema.json). Its column declarations and constraints describe the proposed SQL tables; the application will not become a dynamic schema loader.
+The approved schema and exact demo seed are in [database-schema.json](database-schema.json). Explicit SQL lives in `backend/app/schema.py`, and the runtime seed is `backend/app/seed.json`. The application does not load schema definitions from planning documents.
 
 ## Storage and ownership
 
@@ -24,12 +24,12 @@ The schema supports multiple users without adding registration, password managem
 
 ## Initialization and seeding
 
-1. After approval, create the database and version-1 schema when absent. Record `PRAGMA user_version = 1` in the initialization transaction. Later changes use explicit versioned migrations, preserving existing data.
+1. At startup, create the database and version-1 schema when absent. Record `PRAGMA user_version = 1` in the initialization transaction. Unknown versions and unversioned existing tables are rejected without resetting data; later changes require explicit migrations.
 2. Create the MVP `user` identity and its board, five columns, and eight cards atomically. Use server UUIDs for user/board IDs, preserve all existing demo card/column IDs and text, and start the revision at zero with no chat messages.
 3. Seed only when a board is first created. Finding zero cards is a valid empty board and must never trigger reseeding. Reload, sign-in, and container restart only read existing data.
 4. A future provisioned user receives their own board and seed under the same ownership rules. Usernames are unique, and `boards.user_id` enforces one board per user.
 
-The JSON proposal captures `initialData` directly from `frontend/src/lib/kanban.ts`. Part 6 will place the approved seed in the backend; it will no longer initialize browser runtime state after Part 7 integration.
+The approved JSON captures `initialData` directly from `frontend/src/lib/kanban.ts`; the backend seed matches it exactly. The frontend still initializes its own demo state until Part 7 integrates these APIs.
 
 ## Mapping to the current frontend
 
@@ -54,12 +54,12 @@ New manual cards use `crypto.randomUUID()` on the frontend; new AI cards receive
 
 The existing [session API](AUTH.md) stays unchanged. All endpoints below require `require_user`, use the current user's board, and return `Cache-Control: no-store`.
 
-| Method | Path | Request | Success response | Stage |
+| Method | Path | Request | Success response | Availability |
 | --- | --- | --- | --- | --- |
-| GET | `/api/board` | None | Board snapshot | Part 6 |
-| PUT | `/api/board` | `{expected_revision, columns, cards}` | Saved board snapshot | Part 6 |
-| GET | `/api/chat` | None | `{board: <snapshot>, messages: [...]}` from one read transaction | Part 6 history read; Part 10 UI |
-| POST | `/api/chat` | `{turn_id, expected_revision, message}` | `{board: <snapshot>, messages: [<user message>, <assistant message>]}` | Part 9 |
+| GET | `/api/board` | None | Board snapshot | Implemented |
+| PUT | `/api/board` | `{expected_revision, columns, cards}` | Saved board snapshot | Implemented |
+| GET | `/api/chat` | None | `{board: <snapshot>, messages: [...]}` from one read transaction | Implemented; chat UI remains Part 10 |
+| POST | `/api/chat` | `{turn_id, expected_revision, message}` | `{board: <snapshot>, messages: [<user message>, <assistant message>]}` | Planned for Part 9 |
 
 `PUT /api/board` saves one complete candidate board rather than exposing separate mutation routes for every UI action. Creation, editing, removal, reordering, movement, and column renaming all map to the current frontend state model. The endpoint rejects changes to the fixed column set/order and checks the expected revision before any write. It updates column titles and replaces the board's card rows inside one transaction, preserving IDs and assigning dense positions. Atomic replacement avoids intermediate uniqueness collisions during swaps and cross-column moves. No chat message references a mutable card row by foreign key.
 
@@ -92,7 +92,7 @@ Errors retain the existing FastAPI `{"detail": ...}` envelope:
 
 Normal FastAPI field-validation details may be a list. Frontend errors should present clear messages rather than raw SQL/provider exceptions.
 
-## AI consistency and retries
+## AI consistency and retries (Part 9 contract)
 
 1. Read the board, revision, and ordered history in one short transaction. Check for a completed turn ID first: matching user text returns its saved message pair and the current board, even if the retry carries the old revision. Otherwise reject an already-stale `expected_revision` before calling the provider. Replays neither call the AI nor reapply old changes.
 2. Call OpenRouter outside a database transaction and validate the optional board update against the same board invariants. The AI does not choose an owner or modify metadata such as revision.
@@ -116,10 +116,24 @@ Normal FastAPI field-validation details may be a list. Frontend errors should pr
 | Failure or stale AI response | No partial card/message writes; draft can be retried against refreshed context |
 | Successful response lost in transit | Retry returns the saved message pair and current board, without applying changes twice |
 
-Validation of this proposal uses JSON parsing, exact seed comparison, and disposable in-memory SQLite only. Part 6 must add real API/unit/integration tests for initialization, ownership, ordering, rollback, revisions, and restart persistence against isolated test storage before connecting the frontend in Part 7.
+Part 5 validated the proposal with JSON parsing, exact seed comparison, and disposable in-memory SQLite. Part 6 now adds real API/unit/integration tests for initialization, ownership, ordering, rollback, revisions, and restart persistence against isolated test storage. AI turn writes/retry orchestration still require implementation and testing in Part 9.
 
-Validation completed: all five table definitions executed successfully; two users each received the exact five-column/eight-card seed with shared legacy IDs. Invalid ownership, column references, duplicate ordering, blank titles, and a sixth column were rejected. A candidate snapshot exercised creation, editing, removal, movement, reordering, and renaming while retaining the other user's data. Revision comparison rejected a stale write. Rollback restored cards/messages, and message ordering plus turn-role uniqueness held. These are proposal-level checks, not claims that the future endpoints already exist. No application database file or persistent volume was touched.
+Part 5 proposal validation (before implementation): all five table definitions executed successfully; two users each received the exact five-column/eight-card seed with shared legacy IDs. Invalid ownership, column references, duplicate ordering, blank titles, and a sixth column were rejected. A candidate snapshot exercised creation, editing, removal, movement, reordering, and renaming while retaining the other user's data. Revision comparison rejected a stale write. Rollback restored cards/messages, and message ordering plus turn-role uniqueness held. These initial checks used only disposable databases; the implemented endpoint verification follows below.
 
-## Approval checkpoint
+## Implementation verification
 
-Please approve or request changes to the five-table schema, full-board save contract, shared revision counter, and completed-turn-only chat persistence. Per [Part 5 of PLAN.md](PLAN.md), this checkpoint remains open until the user signs off. No schema or seed will be applied to the running app before that approval.
+- 67 backend tests passed with warnings treated as errors, including concurrent initialization/saves, coherent reads during a concurrent commit, empty-board restart, independent user data, strict validation, rollback after partial writes, and real lock-timeout recovery. Backend lint and formatting passed.
+- The Docker production build passed. The existing browser suite passed 32 scenarios; the four narrow drag variants remain intentionally skipped, with desktop equivalents passing.
+- A disposable HTTP test container and separate volume exercised card creation/editing/removal/movement/reordering, renaming, stale-write rejection, ordered history reads, and logout/login. Completed chat messages were inserted as test fixtures because chat writes are not exposed yet.
+- Removing and recreating that container with the same volume retained the exact empty-board snapshot, revision, column titles, and messages. Deleted cards were not reseeded. These mutation tests did not touch the application's data volume.
+- Compared the packaged schema's columns, defaults, primary/unique indexes, and foreign keys against the approved JSON for all five tables. The backend seed matches the approved JSON exactly.
+
+## Manual API check
+
+Start the app, sign in at `/`, then open `/api/board` or `/api/chat` in the same browser. For a save, use `/docs` to execute `PUT /api/board`: copy the current `columns` and `cards`, replace the response's `revision` with request field `expected_revision`, and omit the response-only `id`. Edit the candidate and execute it; a stale revision returns 409. Reload the API response or stop/start the app and sign in again to verify persistence.
+
+The visible Kanban still uses React demo state. Its edits are not sent to these APIs until Part 7, so use the API responses for this stage's persistence checks. The database path is `/app/data/kanban.sqlite3` in Docker or the ignored repository `data/kanban.sqlite3` for local backend development.
+
+## Approval record
+
+The user approved the five-table schema and database approach and requested implementation. The Part 5 checkpoint is complete. The approved future AI contracts above remain staged work rather than extra functionality added in Part 6.

@@ -1,5 +1,5 @@
 {
-  "status": "proposed - awaiting user approval",
+  "status": "approved by user",
   "schema_version": 1,
   "engine": "SQLite",
   "driver": "Python standard-library sqlite3",

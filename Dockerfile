@@ -15,6 +15,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     UV_LINK_MODE=copy \
     STATIC_DIR=/app/static \
+    DATABASE_PATH=/app/data/kanban.sqlite3 \
     PATH="/app/.venv/bin:$PATH"
 
 WORKDIR /app
