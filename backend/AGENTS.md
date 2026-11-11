@@ -6,8 +6,11 @@ Follow the root `AGENTS.md` and `../docs/PLAN.md`.
 
 - Python 3.14, FastAPI, and Uvicorn; dependencies are declared in `pyproject.toml` and resolved in the generated `uv.lock`. Regenerate the lock with uv rather than editing it.
 - `app/main.py` defines `create_app` and `GET /api/health`. Register API routes before the root static mount.
+- `app/auth.py` provides GET/POST/DELETE `/api/session`, dummy credential validation, and `require_user`. Apply `Depends(require_user)` to private APIs introduced later; the health endpoint and static assets stay public.
+- Each app instance owns an in-memory token/expiry store. Tokens expire after eight hours, rotate on sign-in, and are revoked on sign-out. Cookies are HttpOnly, SameSite=Lax, and scoped to `/`; session responses use `Cache-Control: no-store`. Restarting the backend requires signing in again. No database or signing-key dependency is needed for this stage.
 - Docker copies the Next.js export into `/app/static` and sets `STATIC_DIR` to that path. Local development defaults to `frontend/out/` relative to the repository. Missing exports do not block API startup; build the frontend before loading the local backend homepage.
 - `tests/test_app.py` uses isolated static fixtures to verify the API, nested static assets, and 404 handling. Tests use FastAPI TestClient with httpx2. Frontend Playwright tests separately exercise the actual Docker export.
+- `tests/test_auth.py` verifies credential rejection, token validity/expiry/rotation/revocation, independent browser sessions, and cookie/cache attributes.
 - The Docker image installs production dependencies using `uv sync --locked --no-dev` and runs as the non-root `app` user.
 - Compose mounts persistent storage at `/app/data` and reserves `DATABASE_PATH=/app/data/kanban.sqlite3` for later database implementation. No application schema or database initialization exists yet; follow the Part 5 approval checkpoint.
 

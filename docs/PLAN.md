@@ -1,6 +1,6 @@
 # Project implementation plan
 
-Status: Parts 1 and 2 are complete and accepted by the user. Part 3 is implemented and verified; Part 4 has not started.
+Status: Parts 1-3 are complete and accepted by the user. Part 4 is implemented and verified. The Part 5 schema proposal is ready for user approval; Part 6 has not started.
 
 ## Agreed behavior
 
@@ -17,13 +17,13 @@ Status: Parts 1 and 2 are complete and accepted by the user. Part 3 is implement
 
 ## Existing frontend
 
-- `frontend/src/app/page.tsx` renders `KanbanBoard`; `layout.tsx` provides metadata and Google fonts.
+- `frontend/src/app/page.tsx` renders the session-aware `Workspace`; `layout.tsx` provides metadata and Google fonts.
 - `KanbanBoard.tsx` owns in-memory state and pointer drag and drop using dnd-kit, including cancellation and a stable context ID for hydration.
 - `KanbanColumn`, `KanbanCard`, `KanbanCardPreview`, and `NewCardForm` implement the board UI.
 - `frontend/src/lib/kanban.ts` contains board types, demo data, ID generation, and movement logic.
 - Column renaming, card creation/removal, and card movement exist. Card editing is missing, and changes reset on reload.
 - Vitest and React Testing Library cover board interactions and movement logic. Playwright covers production static serving through FastAPI and local development, including desktop and narrow layouts.
-- Docker statically builds and serves the frontend. Authentication, board API integration, persistence, card editing, and AI chat are not implemented.
+- Docker statically builds and serves the frontend. Backend-managed sign-in/sign-out is implemented. Board API integration, persistence, card editing, and AI chat are not implemented.
 
 ## Part 1: Plan and frontend documentation
 
@@ -70,34 +70,38 @@ Verification: frontend lint, 12 unit/component tests, production type checking/s
 
 ## Part 4: Sign-in and sign-out
 
-- [ ] Agree session API contracts with the backend: session lookup, sign-in, and sign-out using a backend-managed session cookie.
-- [ ] Add labeled username/password inputs, submit/pending states, invalid-credentials feedback, and service-error feedback.
-- [ ] Resolve session state before displaying the board, with a loading state that avoids flashing private content.
-- [ ] Show the board after successful sign-in and provide an accessible sign-out action.
-- [ ] Clear private frontend state on sign-out or session expiry while retaining saved board/chat data on the server.
-- [ ] Validate credentials and protect API routes in the backend rather than relying on client-side checks.
+- [x] Agree session API contracts with the backend: session lookup, sign-in, and sign-out using a backend-managed session cookie.
+- [x] Add labeled username/password inputs, submit/pending states, invalid-credentials feedback, and service-error feedback.
+- [x] Resolve session state before displaying the board, with a loading state that avoids flashing private content.
+- [x] Show the board after successful sign-in and provide an accessible sign-out action.
+- [x] Clear private frontend state on sign-out or session expiry while retaining saved board/chat data on the server.
+- [x] Validate credentials and protect API routes in the backend rather than relying on client-side checks.
 
 Tests:
 
-- [ ] Component tests cover validation, pending submission, errors, successful sign-in, and sign-out.
-- [ ] Browser tests cover a fresh visit, rejected/accepted credentials, reload with an active session, and sign-out.
-- [ ] Verify unauthenticated API requests are rejected and returning after sign-out does not expose board/chat content.
+- [x] Component tests cover validation, pending submission, errors, successful sign-in, and sign-out.
+- [x] Browser tests cover a fresh visit, rejected/accepted credentials, reload with an active session, and sign-out.
+- [x] Verify unauthenticated API requests are rejected and returning after sign-out does not expose board/chat content.
 
 Success criteria: `user` / `password` unlocks the board; sign-out returns to the form without deleting saved data.
 
+Verification: frontend lint, 24 unit/component tests, production type checking/static export, backend lint/formatting, and 18 backend tests passed. Production browser tests passed 32 scenarios at desktop/narrow widths; four narrow pointer-drag variants remain intentionally skipped. The dev-server path passed 17 desktop tests with its FastAPI-only test skipped. Inspected sign-in and board screenshots. Session expiry/revocation, late responses, and API failure recovery are covered. Logout changes only session state; no database or saved board/chat data has been introduced or deleted. See `docs/AUTH.md`.
+
 ## Part 5: Database modeling and frontend contracts
 
-- [ ] Propose the database schema as JSON and document it in `docs/`, including users, boards, fixed columns, ordered cards, and persistent chat messages.
-- [ ] Define stable IDs, card title/details, column titles, card ordering, and message ordering.
-- [ ] Define request/response shapes for session, board reads/mutations, chat history, and chat submission, including errors.
-- [ ] Seed demo data only when a user's board is first created; later loads must not recreate removed cards.
-- [ ] Define how successful AI responses return persisted messages and the resulting board to the UI.
+- [x] Propose the database schema as JSON and document it in `docs/`, including users, boards, fixed columns, ordered cards, and persistent chat messages.
+- [x] Define stable IDs, card title/details, column titles, card ordering, and message ordering.
+- [x] Define request/response shapes for session, board reads/mutations, chat history, and chat submission, including errors.
+- [x] Specify demo seeding only when a user's board is first created; later loads must not recreate removed cards. Runtime seeding remains Part 6 work.
+- [x] Define how successful AI responses return persisted messages and the resulting board to the UI.
 - [ ] Obtain user sign-off on the schema and database approach before implementing it.
 
 Validation and success criteria:
 
-- [ ] Walk through card creation/editing/removal/movement, column renaming, chat reload, and sign-out/sign-in using the proposed contracts.
-- [ ] The approved schema supports these operations without adding account management or multiple-board UI.
+- [x] Walk through card creation/editing/removal/movement, column renaming, chat reload, and sign-out/sign-in using the proposed contracts.
+- [x] Validate that the proposed schema supports these operations without adding account management or multiple-board UI. User approval remains pending.
+
+Proposal: `docs/database-schema.json` defines five tables and the exact existing demo seed. `docs/DATABASE.md` defines ownership, snapshot-save APIs, ordering, revisions, atomic chat updates, retries, and lifecycle behavior. All table definitions were accepted by disposable in-memory SQLite. Checks covered two independently seeded users, constraints, create/edit/remove/move/reorder/rename, revision comparison, rollback, and chat turn uniqueness. No application database or persistent volume was opened or changed. The schema must be approved before Part 6 implementation.
 
 ## Part 6: Backend APIs
 

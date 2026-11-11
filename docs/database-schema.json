@@ -1,0 +1,226 @@
+{
+  "status": "proposed - awaiting user approval",
+  "schema_version": 1,
+  "engine": "SQLite",
+  "driver": "Python standard-library sqlite3",
+  "database_path": "/app/data/kanban.sqlite3",
+  "connection_settings": {
+    "foreign_keys": "ON on every connection",
+    "journal_mode": "WAL",
+    "busy_timeout_ms": 5000
+  },
+  "tables": [
+    {
+      "name": "users",
+      "purpose": "Stable user identity; MVP credentials remain hardcoded in the backend.",
+      "columns": {
+        "id": "TEXT NOT NULL",
+        "username": "TEXT NOT NULL",
+        "created_at": "TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+      },
+      "constraints": [
+        "PRIMARY KEY (id)",
+        "UNIQUE (username)",
+        "CHECK (length(trim(username)) > 0)"
+      ]
+    },
+    {
+      "name": "boards",
+      "purpose": "One board per user; revision tracks both board saves and completed chat turns.",
+      "columns": {
+        "id": "TEXT NOT NULL",
+        "user_id": "TEXT NOT NULL",
+        "revision": "INTEGER NOT NULL DEFAULT 0 CHECK (revision >= 0)",
+        "created_at": "TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))",
+        "updated_at": "TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+      },
+      "constraints": [
+        "PRIMARY KEY (id)",
+        "UNIQUE (user_id)",
+        "FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE"
+      ]
+    },
+    {
+      "name": "board_columns",
+      "purpose": "Five fixed slots per board, with editable titles and immutable order.",
+      "columns": {
+        "board_id": "TEXT NOT NULL",
+        "id": "TEXT NOT NULL CHECK (id IN ('col-backlog', 'col-discovery', 'col-progress', 'col-review', 'col-done'))",
+        "title": "TEXT NOT NULL CHECK (length(trim(title)) > 0)",
+        "position": "INTEGER NOT NULL CHECK (position BETWEEN 0 AND 4)"
+      },
+      "constraints": [
+        "PRIMARY KEY (board_id, id)",
+        "UNIQUE (board_id, position)",
+        "FOREIGN KEY (board_id) REFERENCES boards (id) ON DELETE CASCADE"
+      ]
+    },
+    {
+      "name": "cards",
+      "purpose": "Editable cards with dense zero-based ordering within each column.",
+      "columns": {
+        "board_id": "TEXT NOT NULL",
+        "id": "TEXT NOT NULL",
+        "column_id": "TEXT NOT NULL",
+        "title": "TEXT NOT NULL CHECK (length(trim(title)) > 0)",
+        "details": "TEXT NOT NULL DEFAULT ''",
+        "position": "INTEGER NOT NULL CHECK (position >= 0)"
+      },
+      "constraints": [
+        "PRIMARY KEY (board_id, id)",
+        "UNIQUE (board_id, column_id, position)",
+        "FOREIGN KEY (board_id, column_id) REFERENCES board_columns (board_id, id) ON DELETE CASCADE"
+      ]
+    },
+    {
+      "name": "chat_messages",
+      "purpose": "Persist completed user/assistant turns in deterministic conversation order.",
+      "columns": {
+        "board_id": "TEXT NOT NULL",
+        "id": "TEXT NOT NULL",
+        "turn_id": "TEXT NOT NULL",
+        "sequence": "INTEGER NOT NULL CHECK (sequence >= 0)",
+        "role": "TEXT NOT NULL CHECK (role IN ('user', 'assistant'))",
+        "content": "TEXT NOT NULL CHECK (length(trim(content)) > 0)",
+        "created_at": "TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+      },
+      "constraints": [
+        "PRIMARY KEY (board_id, id)",
+        "UNIQUE (board_id, sequence)",
+        "UNIQUE (board_id, turn_id, role)",
+        "FOREIGN KEY (board_id) REFERENCES boards (id) ON DELETE CASCADE"
+      ]
+    }
+  ],
+  "identity": {
+    "users_and_boards": "Server-generated UUID strings.",
+    "columns": "Existing fixed col-* IDs, scoped to a board.",
+    "cards": "Preserve existing card-1 through card-8 for seeds. New manual cards use client-generated crypto.randomUUID() IDs; new AI cards use backend-generated UUIDs.",
+    "messages": "Server-generated UUID strings, scoped to a board.",
+    "turns": "Client-generated UUID reused when retrying the same chat request."
+  },
+  "fixed_columns": [
+    {
+      "id": "col-backlog",
+      "position": 0
+    },
+    {
+      "id": "col-discovery",
+      "position": 1
+    },
+    {
+      "id": "col-progress",
+      "position": 2
+    },
+    {
+      "id": "col-review",
+      "position": 3
+    },
+    {
+      "id": "col-done",
+      "position": 4
+    }
+  ],
+  "application_invariants": [
+    "Each board has exactly the five fixed column IDs in the specified order. Only titles can change.",
+    "Each card occurs in exactly one column and cardIds ordering matches stored positions.",
+    "All card and column queries include board_id resolved from the authenticated user.",
+    "Column titles and card titles are trimmed and nonempty. Empty card details are allowed.",
+    "Card positions are dense zero-based integers after each committed board save.",
+    "A completed chat turn contains exactly one user message and one assistant message, inserted atomically.",
+    "Every accepted board save or completed chat turn increments the board revision once.",
+    "Only a new board is seeded. Reloads, sign-ins, empty boards, and container restarts never reseed it."
+  ],
+  "seed": {
+    "username": "user",
+    "source": "Exact demo board from frontend/src/lib/kanban.ts initialData; captured in board below.",
+    "revision": 0,
+    "messages": [],
+    "board": {
+      "columns": [
+        {
+          "id": "col-backlog",
+          "title": "Backlog",
+          "cardIds": [
+            "card-1",
+            "card-2"
+          ]
+        },
+        {
+          "id": "col-discovery",
+          "title": "Discovery",
+          "cardIds": [
+            "card-3"
+          ]
+        },
+        {
+          "id": "col-progress",
+          "title": "In Progress",
+          "cardIds": [
+            "card-4",
+            "card-5"
+          ]
+        },
+        {
+          "id": "col-review",
+          "title": "Review",
+          "cardIds": [
+            "card-6"
+          ]
+        },
+        {
+          "id": "col-done",
+          "title": "Done",
+          "cardIds": [
+            "card-7",
+            "card-8"
+          ]
+        }
+      ],
+      "cards": {
+        "card-1": {
+          "id": "card-1",
+          "title": "Align roadmap themes",
+          "details": "Draft quarterly themes with impact statements and metrics."
+        },
+        "card-2": {
+          "id": "card-2",
+          "title": "Gather customer signals",
+          "details": "Review support tags, sales notes, and churn feedback."
+        },
+        "card-3": {
+          "id": "card-3",
+          "title": "Prototype analytics view",
+          "details": "Sketch initial dashboard layout and key drill-downs."
+        },
+        "card-4": {
+          "id": "card-4",
+          "title": "Refine status language",
+          "details": "Standardize column labels and tone across the board."
+        },
+        "card-5": {
+          "id": "card-5",
+          "title": "Design card layout",
+          "details": "Add hierarchy and spacing for scanning dense lists."
+        },
+        "card-6": {
+          "id": "card-6",
+          "title": "QA micro-interactions",
+          "details": "Verify hover, focus, and loading states."
+        },
+        "card-7": {
+          "id": "card-7",
+          "title": "Ship marketing page",
+          "details": "Final copy approved and asset pack delivered."
+        },
+        "card-8": {
+          "id": "card-8",
+          "title": "Close onboarding sprint",
+          "details": "Document release notes and share internally."
+        }
+      }
+    }
+  },
+  "sessions": "Remain in backend memory as implemented in Part 4; no session table or persisted password is proposed.",
+  "migration": "Use PRAGMA user_version = 1 after transactional schema creation. Later schema changes require explicit versioned migrations without resetting data."
+}

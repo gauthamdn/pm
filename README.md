@@ -16,6 +16,6 @@ Windows PowerShell:
 ./scripts/stop.ps1
 ```
 
-Open http://localhost:8000 after starting. FastAPI serves the statically built Kanban demo. Board changes currently reset on reload; sign-in and persistence come in later stages.
+Open http://localhost:8000 and sign in with `user` / `password`. FastAPI serves the static frontend and session API. Board changes currently reset on reload; persistence comes in later stages.
 
 Normal stops preserve the data volume. See [Docker setup](docs/SCAFFOLDING.md) and [frontend testing](docs/FRONTEND.md).

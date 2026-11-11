@@ -6,7 +6,9 @@ Follow the root `AGENTS.md` and read `../docs/PLAN.md` before making changes. Ke
 
 This is an in-memory Kanban demo using Next.js 16 App Router, React 19, strict TypeScript, Tailwind CSS 4, dnd-kit, and clsx. Docker builds it as static assets served by FastAPI. The `@/*` import alias maps to `src/*`.
 
-- `src/app/page.tsx` renders the board at `/`.
+- `src/app/page.tsx` renders `Workspace` at `/`.
+- `src/components/Workspace.tsx` resolves the backend session before showing the board, renders the sign-in form, and handles sign-out. Session checks run every minute and on focus/visibility changes; authentication requests suspend old checks so stale responses cannot restore a signed-out board. Background network failures retain the existing board and show an error.
+- `src/lib/auth.ts` defines same-origin session lookup, sign-in, and sign-out requests. Authentication decisions and session cookies belong to the backend.
 - `src/app/layout.tsx` sets metadata and loads Manrope and Space Grotesk through `next/font/google`.
 - `src/app/globals.css` defines Tailwind imports, shared color/surface tokens, and typography.
 - `src/components/KanbanBoard.tsx` owns board and drag state. It handles column renaming, card creation/removal, movement, and drag cancellation. Keep its explicit dnd-kit context ID stable to avoid server/client hydration mismatches.
@@ -17,7 +19,7 @@ This is an in-memory Kanban demo using Next.js 16 App Router, React 19, strict T
 
 The demo starts with five columns and eight cards. Cards are stored by ID, and each column's `cardIds` array determines membership and order. Preserve these relationships when changing board logic, and update state immutably.
 
-State lives only in React and resets on reload. Column titles change on each keystroke. Dragging uses a pointer sensor with a six-pixel activation threshold; keyboard movement is not implemented. Card editing, authentication, persistence, board API calls, and AI chat are also not implemented. `next.config.ts` exports to `out/` with trailing slashes for directory-based static serving.
+Board state lives only in React and resets on reload or sign-out. Column titles change on each keystroke. Dragging uses a pointer sensor with a six-pixel activation threshold; keyboard movement is not implemented. Card editing, persistence, board API calls, and AI chat are not implemented. Production builds export to `out/` with trailing slashes. Development mode proxies `/api/` to FastAPI at `127.0.0.1:8000`; start the backend before interactive dev or browser tests.
 
 ## UI conventions
 
@@ -47,14 +49,15 @@ npm run test:e2e
 npm run test:all
 ```
 
-`start` requires a successful build and previews `out/` using `serve`; it does not run a Next.js server. Font loading during builds requires access to Google Fonts; exported font files are served locally at runtime. `test:all` runs unit tests followed by browser tests; it does not run lint or a production build.
+`start` requires a successful build and serves only `out/` using `serve`; it has no session API. Use Docker for a working production preview or `dev` with the running backend. Font loading during builds requires access to Google Fonts; exported font files are served locally at runtime. `test:all` runs unit tests followed by browser tests; it does not run lint or a production build.
 
 ## Tests and verification
 
 - Vitest uses jsdom and React Testing Library. Tests live under `src/` as `*.test.*` or `*.spec.*`; `src/test/setup.ts` loads jest-dom matchers.
 - `src/lib/kanban.test.ts` covers reordering, cross-column and empty-column movement, append behavior, invalid IDs, and immutable updates.
 - `src/components/KanbanBoard.test.tsx` covers initial columns, renaming, adding/removing cards, blank titles, draft cancellation, and default details.
-- Playwright tests live in `tests/board.spec.ts`. They cover loading/reload, fonts, browser/network errors, column renaming, adding/removing/cancelling cards, long text, focus, and pointer drag/drop/cancellation.
+- `Workspace.test.tsx` covers session loading/retry, required fields, pending submission, invalid credentials, network failures, sign-out, expiry, stale responses, and retaining drafts during background failures.
+- Playwright tests live in `tests/board.spec.ts` and `tests/auth.spec.ts`. Board tests authenticate through the actual API; authentication tests exercise the UI, reloads, HttpOnly cookies, revocation, expiry checks, and failure recovery. Tests clean up their own sessions.
 - `playwright.config.ts` runs desktop (1440 x 1000) and narrow (390 x 844) Chromium projects. Pointer drag tests run on desktop; their four narrow variants are explicitly skipped.
 - By default, Playwright starts the Next.js development server at `http://127.0.0.1:3000`. Set `PLAYWRIGHT_BASE_URL=http://127.0.0.1:8000` to test the running Docker app without starting a dev server. The health API test requires this external URL and is skipped in dev mode.
 - Traces and failure screenshots are retained under ignored `test-results*/` directories. The load test also saves a full-page screenshot for visual inspection.
@@ -64,6 +67,6 @@ For bug fixes, first reproduce the issue through the browser as an end user woul
 
 ## Planned integration boundaries
 
-Docker uses a Node build stage and copies only `out/` into the Python runtime image. FastAPI serves these files alongside `/api/health`. See `../docs/FRONTEND.md` for production and development verification commands. Authenticated APIs and SQLite board data remain planned; keep OpenRouter credentials and calls in the backend, and avoid features requiring a Next.js runtime server.
+Docker uses a Node build stage and copies only `out/` into the Python runtime image. FastAPI serves these files alongside `/api/health` and `/api/session`. See `../docs/FRONTEND.md` and `../docs/AUTH.md`. SQLite board data remains planned; keep OpenRouter credentials and calls in the backend, and avoid production features requiring a Next.js runtime server.
 
 The agreed product behavior is immediate AI card updates, chat history retained across reloads/sign-ins, existing demo data seeded into new databases, and data retained across container stops. Implement these through the stages and approval checkpoints in `../docs/PLAN.md`; they are not current demo capabilities.
